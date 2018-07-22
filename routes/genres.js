@@ -1,69 +1,52 @@
+const { Genre, validate } = require('../models/genre');
+const mongoose = require('mongoose');
 const express = require('express');
 const router = express.Router();
 
-const genres = [
-    { id: 1, video: "kuy1" },
-    { id: 2, video: "kuy2", },
-    { id: 3, video: "kuy3", },
-    { id: 4, video: "kuy4", }
-];
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+    const genres = await Genre.find().sort('name');
     res.send(genres);
 })
 
-router.get('/:id', (req, res) => {
-    genre = genres.find(g => g.id === parseInt(req.params.id));
+router.get('/:id', async (req, res) => {
+    const genre = await Genre.findById(req.params.id);
+
     if (!genre) return res.status(404).send('the genre with the given id was not found');
+
     res.send(genre);
 })
 
-router.post('/', (req, res) => {
-    const { error } = validationVideo(req.body);
+router.post('/', async (req, res) => {
+    const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const genre = {
-        id: genres.length + 1,
-        video: req.body.video
-    };
+    let genre = new Genre({ name: req.body.name });
+    genre = await genre.save();
 
-    genres.push(genre);
     res.send(genre);
 });
 
-router.put('/:id', (req, res) => {
-    const genre = genres.find(c => c.id === parseInt(req.params.id));
-    if (!genre) return res.status(404).send('The course with the given ID was not found')
+router.put('/:id', async (req, res) => {
 
-    const { error } = validationVideo(req.body);
+    const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    genre.video = req.body.video;
-    res.send(genre);
+    const genre = await Genre.findByIdAndUpdate(req.params.id, { name: req.body.name }, {
+        new: true
+    });
 
-
-
-});
-
-router.delete('/:id', (req, res) => {
-    const genre = genres.find(c => c.id === parseInt(req.params.id));
     if (!genre) return res.status(404).send('The course with the given ID was not found')
 
-    const index = genres.indexOf(genre);
-    genres.splice(index, 1);
-
     res.send(genre);
-
-
 });
 
-function validationVideo(video) {
-    const schema = {
-        video: Joi.string().min(5).required()
-    }
+router.delete('/:id', async (req, res) => {
+    const genre = await Genre.findByIdAndRemove(req.params.id);
 
-    return Joi.validate(video, schema);
+    if (!genre) return res.status(404).send('The course with the given ID was not found')
 
-}
+    res.send(genre);
+});
 
 module.exports = router;
